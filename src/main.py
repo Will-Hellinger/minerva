@@ -15,6 +15,14 @@ def main(config: dict, data_path, credentials_path) -> None:
 if __name__ == '__main__':
     parser: argparse.ArgumentParser = argparse.ArgumentParser(description='Your favorite Latin Client')
 
+    parser.add_argument('-c', '--config', help='Path to the configuration file', type=str)
+    parser.add_argument('-d', '--data', help='Path to the data folder', type=str)
+    parser.add_argument('-s', '--secrets', help='Path to the credentials file', type=str)
+    parser.add_argument('-u', '--username', help='Username for the application', type=str)
+    parser.add_argument('-p', '--password', help='Password for the application', type=str)
+
+    args: argparse.Namespace = parser.parse_args()
+
     config_path: str = f'{file_manager.get_documents_folder()}{os.sep}minerva{os.sep}config.json'
     default_config_path: str = f'.{os.sep}default{os.sep}config.json'
     data_path: str = f'{file_manager.get_documents_folder()}{os.sep}minerva'
