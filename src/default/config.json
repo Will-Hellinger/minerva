@@ -1,5 +1,34 @@
 {
-    "important-keys" : ["app-name"],
-    "app-name": "minerva",
-    "theme": "DarkBlue14"
+    "important-keys" : {
+        "app-name" : {
+            "show" : true,
+            "editable" : false
+        },
+        "library-repo" : {
+            "show" : false,
+            "editable" : false
+        },
+        "assignment-configs" : {
+            "show" : false,
+            "editable" : false
+        }
+    },
+    "app-name": "Minerva",
+    "library-repo" : {
+        "url" : "https://github.com/Will-Hellinger/lexiscrape/releases/latest/download/",
+        "checksum-file" : "checksum.json"
+    },
+    "schoology-url" : "https://laketravis.schoology.com/",
+    "LTHSLatin-schoology-url" : "https://laketravis.schoology.com/apps/364888653/run/course/7354780159",
+    "latin-url" : "https://lthslatin.org/",
+    "icon-url" : "https://lthslatin.org/favicon.ico",
+    "theme": "DarkBlue14",
+    "Browser": "Chrome",
+    "assignment-configs" : {
+        "synopsis" : {
+            "blocks" : ["e", "b", "c", "d"],
+            "conjugation-chart-types-path" : "[MINERVA-FOLDER]conjugation_chart_types.json",
+            "conjugation-charts-path" : "[MINERVA-FOLDER]data(SUB)"
+        }
+    }
 }

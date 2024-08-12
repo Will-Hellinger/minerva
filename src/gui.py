@@ -12,21 +12,35 @@ def generate_config_layout(config: dict) -> list[list]:
     """
 
     layout: list[list] = [[sg.Text('Configuration Settings', font=('Helvetica', 16))]]
-    important_keys = config.get('important-keys', [])
+    important_keys = config.get('important-keys', {})
 
     for key, value in config.items():
+        prefs: dict = important_keys.get(key, None)
+
         match key:
             case 'important-keys':
                 continue
             case 'theme':
-                if key in important_keys:
-                    layout.append([sg.Text(f'{key}:'), sg.Combo(sg.theme_list(), default_value=value, key=f'-{key}-', disabled=True)])
+                if prefs is not None:
+                    if not prefs.get('show'):
+                        continue
+                    
+                    if not prefs.get('editable', True):
+                        layout.append([sg.Text(f'{key}:'), sg.Combo(sg.theme_list(), default_value=value, key=f'-{key}-', disabled=True)])
+                    else:
+                        layout.append([sg.Text(f'{key}:'), sg.Combo(sg.theme_list(), default_value=value, key=f'-{key}-'), sg.Text('Restart Required')])
                 else:
                     layout.append([sg.Text(f'{key}:'), sg.Combo(sg.theme_list(), default_value=value, key=f'-{key}-'), sg.Text('Restart Required')])
                 continue
             case _:
-                if key in important_keys:
-                    layout.append([sg.Text(f'{key}:'), sg.Input(value, key=f'-{key}-', disabled=True)])
+                if prefs is not None:
+                    if not prefs.get('show'):
+                        continue
+                    
+                    if not prefs.get('editable', True):
+                        layout.append([sg.Text(f'{key}:'), sg.Input(value, key=f'-{key}-', disabled=True)])
+                    else:
+                        layout.append([sg.Text(f'{key}:'), sg.Input(value, key=f'-{key}-')])
                 else:
                     layout.append([sg.Text(f'{key}:'), sg.Input(value, key=f'-{key}-')])
     
@@ -35,12 +49,10 @@ def generate_config_layout(config: dict) -> list[list]:
     return layout
 
 
-def initialization_window(config: dict = {}, credentials_path: str = None) -> dict:
+def initialization_window(config: dict = {}, credentials_path: str = None, icon_path: str | None = None) -> dict:
     """
     Function to manage the initialization window.
 
-    :param app_name: Name of the application.
-    :param theme: Theme to use for the GUI.
     :param config: Dictionary containing the configuration settings.
     :param credentials_path: Path to the credentials file.
     :return: Updated configuration settings.
@@ -78,14 +90,18 @@ def initialization_window(config: dict = {}, credentials_path: str = None) -> di
     ]
 
     # Create Window
-    window = sg.Window(f'{app_name} Setup', firstpage, finalize=True)
+    if icon_path is None:
+        window = sg.Window(f'{app_name} Setup', firstpage, finalize=True)
+    else:
+        window = sg.Window(f'{app_name} Setup', firstpage, finalize=True, icon=icon_path)
+
     current_layout = 1
 
     while True:
         event, values = window.read()
 
         if event == sg.WINDOW_CLOSED:
-            break
+            return None
 
         if event == 'Next':
             match current_layout:
@@ -95,7 +111,7 @@ def initialization_window(config: dict = {}, credentials_path: str = None) -> di
                     current_layout += 1
                 case 2:
                     for key in config.keys():
-                        if key == 'important-keys':
+                        if values.get(f'-{key}-', None) is None:
                             continue
 
                         config[key] = values[f'-{key}-']
@@ -131,7 +147,7 @@ def initialization_window(config: dict = {}, credentials_path: str = None) -> di
     return config
 
 
-def login_window(config: dict = {}, credentials_path: str = None) -> tuple[str, str]:
+def login_window(config: dict = {}, credentials_path: str = None, icon_path: str | None = None) -> tuple[str, str]:
     """
     Function to manage the login credentials
     
@@ -143,16 +159,23 @@ def login_window(config: dict = {}, credentials_path: str = None) -> tuple[str, 
     app_name: str = config.get('app-name', 'minerva')
     theme: str = config.get('theme', None)
 
+    if not login_manager.credentials_exist(credentials_path):
+        sg.popup('No credentials found! Please run through setup again')
+        return None, None
+
     if theme is not None:
         sg.theme(theme)
 
     layout_master_password = [
         [sg.Text('Enter Master Password:', size=(20, 1))],
         [sg.Input(password_char='*', key='-MASTER-PWD-')],
-        [sg.Button('Submit')]
+        [sg.Button('Submit'), sg.Button('Forgot Password')]
     ]
 
-    window = sg.Window(f'{app_name} Login Manager', layout_master_password)
+    if icon_path is None:
+        window = sg.Window(f'{app_name} Login Manager', layout_master_password)
+    else:
+        window = sg.Window(f'{app_name} Login Manager', layout_master_password, icon=icon_path)
 
     username, password = None, None
     master_password = None
@@ -175,6 +198,51 @@ def login_window(config: dict = {}, credentials_path: str = None) -> tuple[str, 
                     sg.popup('Error loading credentials!', e)
             else:
                 sg.popup('No credentials found!')
+        
+        if event == 'Forgot Password':
+            sg.popup('Removing credentials...')
+            login_manager.delete_credentials(credentials_path)
+            window.close()
 
     window.close()
+    
     return username, password
+
+
+def control_window(config: dict = {}, icon_path: str | None = None) -> None:
+    """
+    Function to manage the control window.
+
+    :param config: Dictionary containing the configuration settings.
+    :return: None
+    """
+
+    app_name: str = config.get('app-name', 'minerva')
+    theme: str = config.get('theme', None)
+
+    if theme is not None:
+        sg.theme(theme)
+
+    layout = [
+        [sg.Text(f'Welcome to {app_name}!', font=('Helvetica', 16))],
+        [sg.Button('Settings'), sg.Button('Exit')]
+    ]
+
+    if icon_path is None:
+        window = sg.Window(f'{app_name}', layout)
+    else:
+        window = sg.Window(f'{app_name}', layout, icon=icon_path)
+
+    while True:
+        event, values = window.read()
+
+        if event == sg.WINDOW_CLOSED or event == 'Exit':
+            break
+
+        if event == 'Settings':
+            window.close()
+            break
+
+    window.close()
+
+    return None

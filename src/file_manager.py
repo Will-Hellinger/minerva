@@ -58,3 +58,33 @@ def save_json(file_path: Path, data: dict) -> None:
 
     with open(file_path, 'w') as file:
         json.dump(data, file, indent=4)
+
+
+def clean_path(file_path: str, data_path: str) -> str:
+    """
+    Cleans a file path by removing any invalid characters.
+
+    :param file_path: Path to clean.
+    :return: Cleaned file path.
+    """
+
+    mapped_paths: dict = {
+        '[MINERVA-FOLDER]' : data_path,
+        '(SUB)' : os.sep
+    }
+
+    for key, value in mapped_paths.items():
+        file_path = file_path.replace(key, value)
+    
+    return file_path
+
+
+def check_file_exists(file_path: Path) -> bool:
+    """
+    Checks if a file exists.
+
+    :param file_path: Path to the file.
+    :return: True if the file exists, False otherwise.
+    """
+
+    return os.path.exists(file_path)

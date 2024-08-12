@@ -1,2 +1,8 @@
+beautifulsoup4==4.12.3
 cryptography==42.0.6
+pyinflect==0.5.1
+PySimpleGUI==4.70.1
 PySimpleGUI==5.0.6
+Requests==2.32.3
+selenium==4.22.0
+webdriver_manager==4.0.2

@@ -89,12 +89,24 @@ def credentials_exist(filepath: str = 'secrets.enc') -> bool:
     :param filepath: Path to the credentials file.
     :return: True if the file exists, False otherwise.
     """
-    
+
     return os.path.exists(filepath)
 
 
+def delete_credentials(filepath: str = 'secrets.enc') -> None:
+    """
+    Deletes the credentials file.
+
+    :param filepath: Path to the credentials file.
+    :return: None
+    """
+
+    if os.path.exists(filepath):
+        os.remove(filepath)
+
+
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Your favorite Latin Client')
+    parser = argparse.ArgumentParser(description="Your favorite Latin Client's Login Manager")
 
     parser.add_argument('-u', '--username', help='Username for the application', type=str)
     parser.add_argument('-p', '--password', help='Password for the application', type=str)
