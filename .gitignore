@@ -166,4 +166,3 @@ cython_debug/
 *.enc
 
 # Unfinished files
-src/assignments/composition.py

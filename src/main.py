@@ -2,6 +2,7 @@ import os
 import json
 import time
 import nltk
+import glob
 import shutil
 import requests
 import argparse
@@ -14,6 +15,7 @@ import login_manager
 import schoology_manager
 
 import assignments.synopsis
+import assignments.composition
 
 
 def main(config: dict, data_path: str, credentials_path: str, icon_path: str, master_password: str) -> None:
@@ -113,10 +115,28 @@ def main(config: dict, data_path: str, credentials_path: str, icon_path: str, ma
     
     noun_adj_chart: dict = json.load(open(f'{cleaned_noun_adj_chart_path}{noun_adj_chart_name}', 'r'))
 
+    #composition setup
+    composition_config: dict = assignment_configs.get('composition', {})
+
+    composition_dict_paths: list[str] = composition_config.get('dictionary-paths', [])
+    cleaned_composition_dict_paths: list[str] = []
+    composition_dict_files: list[str] = []
+    cleaned_composition_cache_path: str = file_manager.clean_path(composition_config.get('cache-path', None), data_path)
+
+    composition_use_synonyms: bool = composition_config.get('use-synonyms', True)
+
+    for path in composition_dict_paths:
+        cleaned_composition_dict_paths.append(file_manager.clean_path(path, data_path))
+    
+    for path in cleaned_composition_dict_paths:
+        composition_dict_files.extend(glob.glob(f'{path}*.json'))
+
+    composition_dictionary: dict = assignments.composition.generate_dictionary(composition_dict_files)
+
     #timed-vocabulary setup
     timed_vocabulary_config: dict = assignment_configs.get('timed-vocabulary', {})
 
-    cleaned_timed_vocab_dict_path: str = file_manager.clean_path(timed_vocabulary_config.get('dictionary_path', None), data_path)
+    cleaned_timed_vocab_dict_path: str = file_manager.clean_path(timed_vocabulary_config.get('dictionary-path', None), data_path)
 
     nltk_dependencies: list[str] = timed_vocabulary_config.get('nltk-dependencies', [])
 
@@ -129,7 +149,7 @@ def main(config: dict, data_path: str, credentials_path: str, icon_path: str, ma
                 nltk_working = False
                 print(f'Unable to download {dependency}, continuing...')
 
-    gui.control_window(webdriver, config, icon_path, modes, synopsis_conjugation_types, synopsis_charts, synopsis_blocks, noun_adj_chart, nltk_working, cleaned_timed_vocab_dict_path)
+    gui.control_window(webdriver, config, icon_path, modes, synopsis_conjugation_types, synopsis_charts, synopsis_blocks, noun_adj_chart, composition_dictionary, cleaned_composition_cache_path, composition_use_synonyms, nltk_working, cleaned_timed_vocab_dict_path)
 
 
 if __name__ == '__main__':

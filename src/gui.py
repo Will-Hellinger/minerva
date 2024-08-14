@@ -9,6 +9,7 @@ import lthslatin_manager
 
 import assignments.synopsis
 import assignments.noun_adj
+import assignments.composition
 import assignments.timed_vocabulary
 
 
@@ -218,7 +219,7 @@ def login_window(config: dict = {}, credentials_path: str = None, icon_path: str
     return username, password
 
 
-def control_window(webdriver: selenium.webdriver, config: dict, icon_path: str | None, available_modes: list[str], synopsis_conjugation_types: dict | None, synopsis_charts: dict | None, synopsis_blocks: tuple[str] | None, noun_adjective_chart: dict | None, nltk_working: bool | None, cleaned_timed_vocab_dict_path: str | None) -> None:
+def control_window(webdriver: selenium.webdriver, config: dict, icon_path: str | None, available_modes: list[str], synopsis_conjugation_types: dict | None, synopsis_charts: dict | None, synopsis_blocks: tuple[str] | None, noun_adjective_chart: dict | None, composition_dictionary: dict | None, composition_cache_path: str | None, composition_use_synonyms: bool | None, nltk_working: bool | None, timed_vocab_dict_path: str | None) -> None:
     """
     Function to manage the control window.
 
@@ -231,7 +232,7 @@ def control_window(webdriver: selenium.webdriver, config: dict, icon_path: str |
     :param synopsis_blocks: Tuple containing the synopsis blocks.
     :param noun_adjective_chart: Dictionary containing the noun and adjective endings.
     :param nltk_working: Boolean indicating if the NLTK dependencies are working.
-    :param cleaned_timed_vocab_dict_path: Path to the cleaned timed vocabulary dictionary.
+    :param timed_vocab_dict_path: Path to the cleaned timed vocabulary dictionary.
     :return: None
     """
 
@@ -301,11 +302,24 @@ def control_window(webdriver: selenium.webdriver, config: dict, icon_path: str |
                             raise Exception('Noun-Adj data not loaded!')
                         
                         assignments.noun_adj.solver(webdriver, noun_adjective_chart)
+                    case 'composition':
+                        if composition_dictionary is None or composition_cache_path is None or composition_use_synonyms is None:
+                            raise Exception('Composition data not loaded!')
+                        
+                        use_google_trans = config.get('assignment-configs').get('composition').get('use-googletrans', False)
+                        if use_google_trans is False:
+                            run_prediction = False
+                        
+                        assignments.composition.solve(webdriver, run_prediction, translator, composition_dictionary, composition_use_synonyms, composition_cache_path)
                     case 'timed vocabulary':
-                        if nltk_working is None or nltk_working is False or cleaned_timed_vocab_dict_path is None:
+                        if nltk_working is None or nltk_working is False or timed_vocab_dict_path is None:
                             raise Exception('Timed Vocabulary data not loaded!')
                         
-                        assignments.timed_vocabulary.solver(webdriver, cleaned_timed_vocab_dict_path, run_prediction, translator)
+                        use_google_trans = config.get('assignment-configs').get('timed-vocabulary').get('use-googletrans', False)
+                        if use_google_trans is False:
+                            run_prediction = False
+                        
+                        assignments.timed_vocabulary.solver(webdriver, timed_vocab_dict_path, run_prediction, translator)
             except Exception as error:
                 print(f'Error: {error}')
 

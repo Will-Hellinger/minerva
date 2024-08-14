@@ -1,6 +1,7 @@
 beautifulsoup4==4.12.3
 cryptography==42.0.6
 googletrans==3.0.0
+inflect==7.3.1
 nltk==3.8.2
 pyinflect==0.5.1
 PySimpleGUI==4.70.1

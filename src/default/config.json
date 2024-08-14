@@ -38,9 +38,15 @@
             "chart-path" : "[MINERVA-FOLDER]data(SUB)noun_adj_charts(SUB)",
             "chart" : "default.json"
         },
+        "composition" : {
+            "dictionary-paths" : ["[MINERVA-FOLDER]data(SUB)timed_vocabulary_dictionary(SUB)"],
+            "cache-path" : "[MINERVA-FOLDER]data(SUB)composition_cache(SUB)",
+            "use-synonyms" : true,
+            "use-googletrans" : true
+        },
         "timed-vocabulary" : {
             "nltk-dependencies" : ["wordnet", "omw-1.4"],
-            "dictionary_path" : "[MINERVA-FOLDER]data(SUB)timed_vocabulary_dictionary(SUB)",
+            "dictionary-path" : "[MINERVA-FOLDER]data(SUB)timed_vocabulary_dictionary(SUB)",
             "use-googletrans" : false,
             "max-googletrans-delay" : 2
         }

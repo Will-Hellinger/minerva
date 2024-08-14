@@ -176,9 +176,9 @@ def solver(driver: selenium.webdriver, data_path: str, run_prediction: bool, tra
     
     with open(file_path, encoding='utf-8', mode='r+') as file:
         data = json.load(file)
-        items = list(data.keys())
+        definitions: list[str] = data.get('definitions', [])
 
-        if definition in items:
+        if definition in definitions:
             print('Found in dictionary: ...', end='\r')
 
             if data[definition] == True:
@@ -193,12 +193,11 @@ def solver(driver: selenium.webdriver, data_path: str, run_prediction: bool, tra
                 print(f'Assuming timeout on word {word}')
             elif check_true(driver) == False and check_timout(driver, word, definition, data) == False:
                 print(f'Found in dictionary: {word} - {definition} - {data[definition]}: Incorrect, switching now...')
-                data[definition] = not data[definition]
+                data['definitions'].remove(definition)
                 save_file(file, data)
             elif check_true(driver) == None:
                 print('Inactivity or invalid security label')
-                
-        elif definition not in items:
+        else:
             print(f'no entry for {definition} within {word}', end='\r')
 
             if run_prediction == True:
@@ -232,16 +231,19 @@ def solver(driver: selenium.webdriver, data_path: str, run_prediction: bool, tra
             wait_reload(driver, word, definition, vocab_element, definition_element)
 
             if check_true(driver) == True and predicted_guess != None:
-                data[definition] = predicted_guess
+                if predicted_guess == True:
+                    data['definitions'].append(definition)
+                
                 print(f'Predicted Guess - {predicted_guess}: {word} - {definition}: Correct')
             elif check_true(driver) == True and predicted_guess == None:
-                data[definition] = False
                 print(f'Guess - False: {word} - {definition}: Correct')
             elif check_true(driver) == False and predicted_guess != None:
-                data[definition] = not predicted_guess
+                if predicted_guess == False:
+                    data['definitions'].append(definition)
+
                 print(f'Predicted Guess - {predicted_guess}: {word} - {definition}: Incorrect')
             elif check_true(driver) == False and predicted_guess == None:
-                data[definition] = True
+                data['definitions'].append(definition)
                 print(f'Guess - False: {word} - {definition}: Inorrect')
             elif check_true(driver) == None:
                 print('Inactivity or invalid security label')
