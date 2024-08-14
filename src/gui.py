@@ -1,6 +1,15 @@
 import time
-import login_manager
 import PySimpleGUI as sg
+import selenium.webdriver
+from googletrans import Translator
+
+import file_manager
+import login_manager
+import lthslatin_manager
+
+import assignments.synopsis
+import assignments.noun_adj
+import assignments.timed_vocabulary
 
 
 def generate_config_layout(config: dict) -> list[list]:
@@ -209,11 +218,20 @@ def login_window(config: dict = {}, credentials_path: str = None, icon_path: str
     return username, password
 
 
-def control_window(config: dict = {}, icon_path: str | None = None) -> None:
+def control_window(webdriver: selenium.webdriver, config: dict, icon_path: str | None, available_modes: list[str], synopsis_conjugation_types: dict | None, synopsis_charts: dict | None, synopsis_blocks: tuple[str] | None, noun_adjective_chart: dict | None, nltk_working: bool | None, cleaned_timed_vocab_dict_path: str | None) -> None:
     """
     Function to manage the control window.
 
+    :param webdriver: The Selenium WebDriver object.
     :param config: Dictionary containing the configuration settings.
+    :param icon_path: Path to the icon file.
+    :param available_modes: List of available modes.
+    :param synopsis_conjugation_types: Dictionary containing the synopsis conjugation types.
+    :param synopsis_charts: Dictionary containing the synopsis charts.
+    :param synopsis_blocks: Tuple containing the synopsis blocks.
+    :param noun_adjective_chart: Dictionary containing the noun and adjective endings.
+    :param nltk_working: Boolean indicating if the NLTK dependencies are working.
+    :param cleaned_timed_vocab_dict_path: Path to the cleaned timed vocabulary dictionary.
     :return: None
     """
 
@@ -223,9 +241,15 @@ def control_window(config: dict = {}, icon_path: str | None = None) -> None:
     if theme is not None:
         sg.theme(theme)
 
+    user: str | None = lthslatin_manager.get_user(webdriver)
+    mode: str | None = None
+    assignment: str | None = None
+
     layout = [
-        [sg.Text(f'Welcome to {app_name}!', font=('Helvetica', 16))],
-        [sg.Button('Settings'), sg.Button('Exit')]
+        [sg.Text(f'{app_name}', font=('Helvetica', 16))],
+        [sg.Text(f'User: {user}', key='-USER-'), sg.Text(f'Mode: {mode}', key='-MODE-')],
+        [sg.Button('Solve'), sg.Checkbox('Continuous', key='-CONTINUOUS-')],
+        [sg.Button('Exit')]
     ]
 
     if icon_path is None:
@@ -233,16 +257,56 @@ def control_window(config: dict = {}, icon_path: str | None = None) -> None:
     else:
         window = sg.Window(f'{app_name}', layout, icon=icon_path)
 
+    run_prediction: bool = True
+    translator: Translator | None = None
+    use_google_trans: bool = False
+
+    try:
+        translation_delay = lthslatin_manager.get_translation_delay()
+        max_timed_vocab_delay = config.get('assignment-configs').get('timed-vocabulary').get('max-googletrans-delay', 3)
+        use_google_trans = config.get('assignment-configs').get('timed-vocabulary').get('use-googletrans', False)
+
+        if translation_delay is None or translation_delay > max_timed_vocab_delay:
+            run_prediction = False
+            print('Translation service not working or too slow, disabling prediction...')
+        else:
+            translator = Translator()
+    except:
+        run_prediction = False
+    
+    if use_google_trans is False:
+        run_prediction = False
+
     while True:
-        event, values = window.read()
-
+        event, values = window.read(timeout=100)
+        
         if event == sg.WINDOW_CLOSED or event == 'Exit':
-            break
-
-        if event == 'Settings':
             window.close()
             break
 
-    window.close()
+        mode, assignment = lthslatin_manager.find_mode(webdriver, mode, available_modes, config.get('user', None))
+
+        window['-MODE-'].update(f'Mode: {mode}')
+        
+        if event == 'Solve' or values['-CONTINUOUS-']:
+            try:
+                match mode:
+                    case 'synopsis':
+                        if synopsis_conjugation_types is None or synopsis_charts is None or synopsis_blocks is None:
+                            raise Exception('Synopsis data not loaded!')
+                        
+                        assignments.synopsis.solve(webdriver, synopsis_blocks, synopsis_charts, synopsis_conjugation_types)
+                    case 'noun-adj':
+                        if noun_adjective_chart is None:
+                            raise Exception('Noun-Adj data not loaded!')
+                        
+                        assignments.noun_adj.solver(webdriver, noun_adjective_chart)
+                    case 'timed vocabulary':
+                        if nltk_working is None or nltk_working is False or cleaned_timed_vocab_dict_path is None:
+                            raise Exception('Timed Vocabulary data not loaded!')
+                        
+                        assignments.timed_vocabulary.solver(webdriver, cleaned_timed_vocab_dict_path, run_prediction, translator)
+            except Exception as error:
+                print(f'Error: {error}')
 
     return None

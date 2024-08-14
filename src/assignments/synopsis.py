@@ -115,7 +115,7 @@ def find_word(element_list: list) -> str:
     return ''
 
 
-def find_details(driver: selenium.webdriver, blocks: tuple, conjugation_chart: dict) -> dict:
+def find_details(driver: selenium.webdriver, blocks: tuple, conjugation_types: dict) -> dict:
     """
     Find and extract details about Latin words and their conjugations on a web page.
 
@@ -125,7 +125,8 @@ def find_details(driver: selenium.webdriver, blocks: tuple, conjugation_chart: d
     :return: A dictionary containing details about Latin and English words, conjugation chart, and tense.
     """
 
-    conjugation_keys: list[str] = list(conjugation_chart.keys())
+    conjugation_keys: list[str] = list(conjugation_types.keys())
+    conjugation_values: list[list[str]] = list(conjugation_types.values())
 
     #Finds latin conjugation type
     chart: str = 'first' # temp
@@ -140,18 +141,18 @@ def find_details(driver: selenium.webdriver, blocks: tuple, conjugation_chart: d
         except:
             latin_words.append(f'unable to get word {block}')
 
-    for i in range(len(conjugation_keys)):
+    for a in range(len(conjugation_values)):
         temp_chart_found: bool = True
         count: int = 0
 
-        for conjugation in conjugation_chart.get(conjugation_keys[i]):
-            if latin_words[i].endswith(conjugation):
+        for b in range(len(conjugation_values[a])):
+            if latin_words[b].endswith(conjugation_values[a][b]):
                 count += 1
-            else:
+            elif not latin_words[b].endswith(conjugation_values[a][b]):
                 temp_chart_found = False
-        
-        if temp_chart_found:
-            chart = conjugation_keys[i]
+
+        if temp_chart_found == True:
+            chart = conjugation_keys[a]
             chart_found = True
 
         chart_backup.append(count)
@@ -159,8 +160,17 @@ def find_details(driver: selenium.webdriver, blocks: tuple, conjugation_chart: d
     if not chart_found:
         chart = conjugation_keys[chart_backup.index(max(chart_backup))] #this is a fallback in case it cant find the chart regularly
 
-    english_word: str = find_word(driver.find_elements(By.XPATH, f"// li[@class='ui-block-e']")).split(' |')[0]
-    tense: str = find_word(driver.find_elements(By.XPATH, f"// li[@class='ui-block-e']")).split('| ')[1]
+    english_info: list[str] = find_word(driver.find_elements(By.XPATH, f"// li[@class='ui-block-e']")).split(' |')
+
+    if len(english_info) == 1:
+        english_word: str = english_info[0]
+        tense: str | None = None
+    else:
+        english_word: str = english_info[0]
+        tense: str | None = english_info[1]
+
+    if tense is not None and tense.startswith(' '):
+        tense = tense[1:]
 
     english_words: dict = {
                     "VB": english_word,                                         #VB - Verb, Base Form
@@ -180,7 +190,7 @@ def find_details(driver: selenium.webdriver, blocks: tuple, conjugation_chart: d
     return output
 
 
-def solve(driver: selenium.webdriver, blocks: tuple, charts: dict, conjugation_chart: dict) -> None:
+def solve(driver: selenium.webdriver, blocks: tuple, charts: dict, conjugation_types: dict) -> None:
     """
     Solve the Latin conjugation problem.
 
@@ -190,8 +200,8 @@ def solve(driver: selenium.webdriver, blocks: tuple, charts: dict, conjugation_c
     :return: None
     """
 
-    hideShownDropdowns()
-    hideShownDropdowns()
+    hideShownDropdowns(driver)
+    hideShownDropdowns(driver)
     
     current_mode_element = driver.find_element(By.XPATH, f"// div[@class='ui-page ui-page-theme-a ui-page-footer-fixed ui-page-active']")
     page_data: str = find_word(current_mode_element.find_elements(By.XPATH, f"// div[@class='ui-grid-a ui-responsive']")).replace('\nclick to expand contents', '')
@@ -203,11 +213,19 @@ def solve(driver: selenium.webdriver, blocks: tuple, charts: dict, conjugation_c
         page_inputs.append(str(input.get_attribute('id')))
 
     current_mode = page_data.split('\n')[0]
-    details = find_details(driver, blocks, conjugation_chart)
+    details = find_details(driver, blocks, conjugation_types)
 
-    tense_cleaned: str = str(details["tense"]).replace('1st ', 'first-').replace('2nd ', 'second-').replace('3rd ', 'third-')
+    if details.get('tense') is None:
+        print('No tense found, skipping...')
+        return None
+
+    tense_cleaned: str = str(details.get("tense")).replace('1st ', 'first-').replace('2nd ', 'second-').replace('3rd ', 'third-')
 
     latin_dict: dict = charts.get('latin').get(details.get('chart'))
+
+    print(charts.get('english'))
+    print(tense_cleaned)
+
     english_dict: dict = charts.get('english').get(tense_cleaned)
 
     if current_mode == '' and 'storeScore' in page_data:
@@ -269,8 +287,8 @@ def solve(driver: selenium.webdriver, blocks: tuple, charts: dict, conjugation_c
     for i in range(len(english_inputs_keys)):
         english_inputs[english_inputs_keys[i]] = temp_english_inputs[i]
 
-    hideShownDropdowns()
-    showHiddenDropdowns()
+    hideShownDropdowns(driver)
+    showHiddenDropdowns(driver)
 
     for item in latin_inputs:
         latin_input = driver.find_element(By.XPATH, f"// input[@id='{latin_inputs[item]}']")
@@ -282,7 +300,7 @@ def solve(driver: selenium.webdriver, blocks: tuple, charts: dict, conjugation_c
         data_theme: int = blocks.index(latin_input.get_attribute('data-theme'))
 
         word: str = details.get('latin words')[data_theme]
-        word_ending: str = conjugation_chart.get(details.get('chart'))[data_theme]
+        word_ending: str = conjugation_types.get(details.get('chart'))[data_theme]
 
         new_ending = latin_dict.get(current_mode.upper()[:-1]).get(activeness).get(tense)
 
@@ -304,8 +322,8 @@ def solve(driver: selenium.webdriver, blocks: tuple, charts: dict, conjugation_c
             latin_input.send_keys(answer)
             latin_input.send_keys(Keys.RETURN)
     
-    hideShownDropdowns()
-    showHiddenDropdowns()
+    hideShownDropdowns(driver)
+    showHiddenDropdowns(driver)
 
     for item in english_inputs:
         english_input = driver.find_element(By.XPATH, f"// input[@id='{english_inputs[item]}']")

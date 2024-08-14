@@ -11,6 +11,10 @@
         "assignment-configs" : {
             "show" : false,
             "editable" : false
+        },
+        "modes" : {
+            "show" : false,
+            "editable" : false
         }
     },
     "app-name": "Minerva",
@@ -27,8 +31,19 @@
     "assignment-configs" : {
         "synopsis" : {
             "blocks" : ["e", "b", "c", "d"],
-            "conjugation-chart-types-path" : "[MINERVA-FOLDER]conjugation_chart_types.json",
+            "conjugation-chart-types-path" : "[MINERVA-FOLDER]data(SUB)conjugation_chart_types.json",
             "conjugation-charts-path" : "[MINERVA-FOLDER]data(SUB)"
+        },
+        "noun-adj" : {
+            "chart-path" : "[MINERVA-FOLDER]data(SUB)noun_adj_charts(SUB)",
+            "chart" : "default.json"
+        },
+        "timed-vocabulary" : {
+            "nltk-dependencies" : ["wordnet", "omw-1.4"],
+            "dictionary_path" : "[MINERVA-FOLDER]data(SUB)timed_vocabulary_dictionary(SUB)",
+            "use-googletrans" : false,
+            "max-googletrans-delay" : 2
         }
-    }
+    },
+    "modes" : ["synopsis", "noun-adj", "launchpad", "(grasp)", "reading", "catullus", "translation", "composition", "ciples", "infinitive morphology", "timed morphology", "timed vocabulary"]
 }
