@@ -21,7 +21,6 @@ def check_translation_delay() -> int | None:
         return None
 
 
-
 def get_user(webdriver: selenium.webdriver) -> str | None:
     """
     Get the user from the Latin site.

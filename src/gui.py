@@ -59,6 +59,22 @@ def generate_config_layout(config: dict) -> list[list]:
     return layout
 
 
+def generate_dependencies_layout(dependencies: list[str]) -> list[list]:
+    """
+    Function to generate the layout for the dependencies window.
+
+    :param dependencies: List of dependencies.
+    :return: list of dependencies.
+    """
+
+    layout: list[list] = [[sg.Text('Dependencies not found!', font=('Helvetica', 16))]]
+
+    for dependency in dependencies: 
+        layout.append([sg.Checkbox('Installed: ', key=f'-{dependency}-INSTALLED-', disabled=True), sg.Text(dependency), sg.Button('Install', key=f'-INSTALL-{dependency}-'),])
+
+    return layout
+
+
 def initialization_window(config: dict = {}, credentials_path: str = None, icon_path: str | None = None) -> dict:
     """
     Function to manage the initialization window.
@@ -78,7 +94,7 @@ def initialization_window(config: dict = {}, credentials_path: str = None, icon_
         print('No credentials path provided!')
         return config
     
-    firstpage = [
+    first_page = [
         [sg.Text(f'Welcome to {app_name}!', font=('Helvetica', 16))],
         [sg.Text("I've detected that this is your first time using the application!")],
         [sg.Text('Please take a look at the configuration settings on the next page and set your preferences.')],
@@ -86,9 +102,9 @@ def initialization_window(config: dict = {}, credentials_path: str = None, icon_
     ]
 
     # Second Layout
-    configpage = generate_config_layout(config)
+    config_page = generate_config_layout(config)
 
-    passwordpage = [
+    password_page = [
         [sg.Text('In order to maintain the security of your credentials, please enter your credentials below and a master password to lock them.')],
         [sg.Text('Note: The master password cannot be recovered if lost, and will be required every time you start the application.')],
         [sg.Text('Username:', size=(20, 1)), sg.Input(key='-USERNAME-')],
@@ -99,11 +115,16 @@ def initialization_window(config: dict = {}, credentials_path: str = None, icon_
         [sg.Button('Submit')]
     ]
 
+    dependencies_page = [
+        [sg.Text('Dependencies not found!')],
+        [sg.Text('Please install the required dependencies and restart the application.')]
+    ]
+
     # Create Window
     if icon_path is None:
-        window = sg.Window(f'{app_name} Setup', firstpage, finalize=True)
+        window = sg.Window(f'{app_name} Setup', first_page, finalize=True)
     else:
-        window = sg.Window(f'{app_name} Setup', firstpage, finalize=True, icon=icon_path)
+        window = sg.Window(f'{app_name} Setup', first_page, finalize=True, icon=icon_path)
 
     current_layout = 1
 
@@ -117,7 +138,7 @@ def initialization_window(config: dict = {}, credentials_path: str = None, icon_
             match current_layout:
                 case 1:
                     window.close()
-                    window = sg.Window(f'{app_name} Setup', configpage, finalize=True)
+                    window = sg.Window(f'{app_name} Setup', config_page, finalize=True)
                     current_layout += 1
                 case 2:
                     for key in config.keys():
@@ -127,9 +148,9 @@ def initialization_window(config: dict = {}, credentials_path: str = None, icon_
                         config[key] = values[f'-{key}-']
 
                     window.close()
-                    window = sg.Window(f'{app_name} Setup', passwordpage, finalize=True)
+                    window = sg.Window(f'{app_name} Setup', password_page, finalize=True)
             
-        if event == 'Submit':
+        elif event == 'Submit':
             username = values['-USERNAME-']
             password1 = values['-PASSWORD1-']
             password2 = values['-PASSWORD2-']
@@ -149,8 +170,11 @@ def initialization_window(config: dict = {}, credentials_path: str = None, icon_
             sg.popup('Credentials Saved Securely!')
 
             username, password1, password2, master_password1, master_password2 = None, None, None, None, None # Just to be safe
-
-            break
+        
+        elif event.startswith('-INSTALL-'):
+            dependency: str = event.split('-')[2]
+            print(f'Installing {dependency}...')
+            sg.popup(f'Installing {dependency}...')
     
     window.close()
 
